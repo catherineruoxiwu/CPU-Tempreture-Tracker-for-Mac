@@ -1,6 +1,6 @@
 # gem install iStats
 # 0-2 fans
-
+# sudo pip3 install python-daemon
 # Visulize cpu tempreture, battery tempreture, fan speed
 
 import os, re, time, subprocess
@@ -51,7 +51,7 @@ def process_info(file):
     BATERRY_TEMP_ARR.append(battery_temp)
     FAN_SPEED_ARR.append(fan_speed)
     BATTERY_PERCENTAGE_ARR.append(battery_percentage)
-    TIME_ARR.append(datetime.now().strftime("%H:%M:%S"))
+    TIME_ARR.append(datetime.now().strftime("%H:%M"))
 
 def get_battery_percentage(file):
     file.seek(0)
@@ -124,13 +124,13 @@ def graph_temp_vs_speed(plt):
 if __name__ == '__main__':
     # init()
     count = 0
-    while count < 20:
+    while count < 30:
         temp_log = TemporaryFile("w+t")
         temp_log.write("jajaj")
         temp_log.seek(0)
         get_info(temp_log)
         process_info(temp_log)
         temp_log.close()
-        time.sleep(100)
+        time.sleep(4)
         count = count + 1
     graph_data()
