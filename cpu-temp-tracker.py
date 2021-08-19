@@ -3,7 +3,7 @@
 # sudo pip3 install python-daemon
 # Visulize cpu tempreture, battery tempreture, fan speed
 
-import os, re, time, subprocess
+import os, re, time, subprocess, atexit
 from datetime import datetime
 from tempfile import TemporaryFile
 import matplotlib.pyplot as plt
@@ -84,7 +84,6 @@ def graph_data():
     graph_temp_vs_time(graph3)
     graph_temp_vs_speed(graph4)
     plt.savefig("today.png", bbox_inches="tight", dpi=600, pad_inches=0.5)
-    plt.show()
 
 def graph_battery_vs_time(plt):
     plt.plot(TIME_ARR, BATTERY_PERCENTAGE_ARR, color="g")
@@ -123,14 +122,12 @@ def graph_temp_vs_speed(plt):
 #TODO: support devices with 0 or more fans
 if __name__ == '__main__':
     # init()
-    count = 0
-    while count < 30:
+    atexit.register(graph_data)
+    while True:
         temp_log = TemporaryFile("w+t")
         temp_log.write("jajaj")
         temp_log.seek(0)
         get_info(temp_log)
         process_info(temp_log)
         temp_log.close()
-        time.sleep(4)
-        count = count + 1
-    graph_data()
+        time.sleep(3)
