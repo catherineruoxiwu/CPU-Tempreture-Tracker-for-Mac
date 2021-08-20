@@ -3,7 +3,7 @@
 # sudo pip3 install python-daemon
 # Visulize cpu tempreture, battery tempreture, fan speed
 
-import os, re, time, subprocess, atexit
+import os, re, time, subprocess, atexit, json, ast
 from datetime import datetime
 from tempfile import TemporaryFile
 import matplotlib.pyplot as plt
@@ -22,12 +22,28 @@ TIME_ARR = []
 BATTERY_PERCENTAGE_ARR = []
 
 ROOT_DIR = os.path.dirname(__file__)
-DIR_NAME = "Out"
+DATE = datetime.today().strftime("%Y-%m-%d")
+OUT_PATH = os.path.join(ROOT_DIR, DATE)
+LOG_PATH = os.path.join(OUT_PATH, "Log.json")
+GRAPH_PATH = os.path.join(OUT_PATH, "Graph.png")
+print(OUT_PATH)
 
-# def init():
-    
+def get_prev_log():
+    if not os.path.exists(OUT_PATH):
+        os.mkdir(OUT_PATH)
+    if os.path.exists(LOG_PATH):
+        with open(LOG_PATH) as logfile:
+            logdata = json.load(logfile)  
+    global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
+    CPU_TEMP_ARR += logdata["cpu temp"]
+    BATERRY_TEMP_ARR += logdata["battery temp"]
+    FAN_SPEED_ARR += logdata["fan speed"]
+    TIME_ARR += logdata["time"]
+    BATTERY_PERCENTAGE_ARR += logdata["battery percentage"]
+    print(TIME_ARR)
 
 def get_info(file):
+    file.seek(0)
     process = subprocess.Popen("istats all", stdout=subprocess.PIPE, shell=True)
     output = process.communicate()[0]
     output_string = output.decode("utf-8")
@@ -39,7 +55,7 @@ def process_info(file):
     cpu_temp_stringlist = re.findall(CPU_TEMP_REG, filecontent)
     battery_temp_stringlist = re.findall(BATTERY_TEMP_REG, filecontent)
     fan_speed_stringlist = re.findall(FAN_SPEED_REG, filecontent)
-    if len(cpu_temp_stringlist) == 0 or len(battery_temp_stringlist) == 0 or len(fan_speed_stringlist) == 0:
+    if len(cpu_temp_stringlist) == 0 or len(battery_temp_stringlist) == 0 or len(fan_speed_stringlist) != 1:
         print("Oops. Your device is not supported.")
         exit()
     cpu_temp = float(re.findall(DEC_REG, cpu_temp_stringlist[0])[0])
@@ -72,7 +88,10 @@ def check_cpu_temp(cpu_temp):
         os.close()
 
 
-#TODO：store png
+def before_exit():
+    graph_data()
+    store_data()
+
 def graph_data():
     plt.figure(figsize=(10,7.5), constrained_layout=True)
     graph1 = plt.subplot(221)
@@ -83,7 +102,17 @@ def graph_data():
     graph_speed_vs_time(graph2)
     graph_temp_vs_time(graph3)
     graph_temp_vs_speed(graph4)
-    plt.savefig("today.png", bbox_inches="tight", dpi=600, pad_inches=0.5)
+    plt.savefig(GRAPH_PATH, bbox_inches="tight", dpi=600, pad_inches=0.5)
+
+
+def store_data():
+    log = {"cpu temp": CPU_TEMP_ARR,
+           "battery temp": BATERRY_TEMP_ARR,
+           "fan speed": FAN_SPEED_ARR,
+           "time": TIME_ARR,
+           "battery percentage": BATTERY_PERCENTAGE_ARR}
+    with open(LOG_PATH, "w") as logfile:
+        json.dump(log, logfile)
 
 def graph_battery_vs_time(plt):
     plt.plot(TIME_ARR, BATTERY_PERCENTAGE_ARR, color="g")
@@ -114,19 +143,16 @@ def graph_temp_vs_speed(plt):
     plt.set_ylabel('Tempreture (Unit: °C)')
     plt.set_ylim(ymin=0, ymax=max(max(CPU_TEMP_ARR), max(BATERRY_TEMP_ARR)) * 1.35)
 
-#TODO: 判断有没有安装iStats，init
-#TODO: 画图before exit: close os; save graph
-#TODO：判断画图时机
-#TODO：文件路径正确
-#TODO: 在背景运行
+#TODO: 横轴日期
+#TODO：initialize：mkdir；readfile if existed
+#TODO: 画图before exit: save data
+#TODO：图虚线实线
 #TODO: support devices with 0 or more fans
 if __name__ == '__main__':
-    # init()
-    atexit.register(graph_data)
+    get_prev_log()
+    atexit.register(before_exit)
     while True:
         temp_log = TemporaryFile("w+t")
-        temp_log.write("jajaj")
-        temp_log.seek(0)
         get_info(temp_log)
         process_info(temp_log)
         temp_log.close()
