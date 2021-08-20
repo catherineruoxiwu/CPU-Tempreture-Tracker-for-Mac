@@ -29,18 +29,17 @@ GRAPH_PATH = os.path.join(OUT_PATH, "Graph.png")
 print(OUT_PATH)
 
 def get_prev_log():
+    global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
     if not os.path.exists(OUT_PATH):
         os.mkdir(OUT_PATH)
     if os.path.exists(LOG_PATH):
         with open(LOG_PATH) as logfile:
             logdata = json.load(logfile)  
-    global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
-    CPU_TEMP_ARR += logdata["cpu temp"]
-    BATERRY_TEMP_ARR += logdata["battery temp"]
-    FAN_SPEED_ARR += logdata["fan speed"]
-    TIME_ARR += logdata["time"]
-    BATTERY_PERCENTAGE_ARR += logdata["battery percentage"]
-    print(TIME_ARR)
+        CPU_TEMP_ARR += logdata["cpu temp"]
+        BATERRY_TEMP_ARR += logdata["battery temp"]
+        FAN_SPEED_ARR += logdata["fan speed"]
+        TIME_ARR += logdata["time"]
+        BATTERY_PERCENTAGE_ARR += logdata["battery percentage"]
 
 def get_info(file):
     file.seek(0)
@@ -50,6 +49,7 @@ def get_info(file):
     file.write(output_string)
 
 def process_info(file):
+    global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
     file.seek(0)
     filecontent = file.read()
     cpu_temp_stringlist = re.findall(CPU_TEMP_REG, filecontent)
@@ -87,7 +87,6 @@ def check_cpu_temp(cpu_temp):
         os.popen(cmd)
         os.close()
 
-
 def before_exit():
     graph_data()
     store_data()
@@ -106,13 +105,20 @@ def graph_data():
 
 
 def store_data():
+    global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
+    effective_arr_len = min(len(CPU_TEMP_ARR), len(BATERRY_TEMP_ARR), len(FAN_SPEED_ARR), len(TIME_ARR), len(BATTERY_PERCENTAGE_ARR))
+    CPU_TEMP_ARR = CPU_TEMP_ARR[0:effective_arr_len]
+    BATERRY_TEMP_ARR = BATERRY_TEMP_ARR[0:effective_arr_len]
+    FAN_SPEED_ARR = FAN_SPEED_ARR[0:effective_arr_len]
+    TIME_ARR = TIME_ARR[0:effective_arr_len]
+    BATTERY_PERCENTAGE_ARR = BATTERY_PERCENTAGE_ARR[0:effective_arr_len]
     log = {"cpu temp": CPU_TEMP_ARR,
            "battery temp": BATERRY_TEMP_ARR,
            "fan speed": FAN_SPEED_ARR,
            "time": TIME_ARR,
            "battery percentage": BATTERY_PERCENTAGE_ARR}
     with open(LOG_PATH, "w") as logfile:
-        json.dump(log, logfile)
+        json.dump(log, logfile, indent=4)
 
 def graph_battery_vs_time(plt):
     plt.plot(TIME_ARR, BATTERY_PERCENTAGE_ARR, color="g")
@@ -144,8 +150,7 @@ def graph_temp_vs_speed(plt):
     plt.set_ylim(ymin=0, ymax=max(max(CPU_TEMP_ARR), max(BATERRY_TEMP_ARR)) * 1.35)
 
 #TODO: 横轴日期
-#TODO：initialize：mkdir；readfile if existed
-#TODO: 画图before exit: save data
+#TODO: 跨日期
 #TODO：图虚线实线
 #TODO: support devices with 0 or more fans
 if __name__ == '__main__':
@@ -156,4 +161,4 @@ if __name__ == '__main__':
         get_info(temp_log)
         process_info(temp_log)
         temp_log.close()
-        time.sleep(3)
+        time.sleep(100)
