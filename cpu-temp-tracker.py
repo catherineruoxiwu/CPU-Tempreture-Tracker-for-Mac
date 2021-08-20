@@ -3,11 +3,14 @@
 # sudo pip3 install python-daemon
 # Visulize cpu tempreture, battery tempreture, fan speed
 
-import os, re, time, subprocess, atexit, json, ast
+import os, re, time, subprocess, atexit, json
 from datetime import datetime
 from tempfile import TemporaryFile
 import matplotlib.pyplot as plt
 
+
+
+############### GLOBAL VARIABLES ###############
 
 CPU_TEMP_REG = r"CPU temp:\s+[0-9]*\.[0-9]+"
 BATTERY_TEMP_REG = r"Battery temp:\s+[0-9]*\.[0-9]+"
@@ -28,6 +31,10 @@ LOG_PATH = os.path.join(OUT_PATH, "Log.json")
 GRAPH_PATH = os.path.join(OUT_PATH, "Graph.png")
 print(OUT_PATH)
 
+
+
+############### INITIALIZATION ###############
+
 def get_prev_log():
     global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
     if not os.path.exists(OUT_PATH):
@@ -40,6 +47,10 @@ def get_prev_log():
         FAN_SPEED_ARR += logdata["fan speed"]
         TIME_ARR += logdata["time"]
         BATTERY_PERCENTAGE_ARR += logdata["battery percentage"]
+
+
+
+############### GET AND PROCESS COMPUTER STATS ###############
 
 def get_info(file):
     file.seek(0)
@@ -87,7 +98,11 @@ def check_cpu_temp(cpu_temp):
         os.popen(cmd)
         os.close()
 
-def before_exit():
+
+
+############### GRAPHING AND STORING DATA ###############
+
+def manage_exit():
     graph_data()
     store_data()
 
@@ -102,7 +117,6 @@ def graph_data():
     graph_temp_vs_time(graph3)
     graph_temp_vs_speed(graph4)
     plt.savefig(GRAPH_PATH, bbox_inches="tight", dpi=600, pad_inches=0.5)
-
 
 def store_data():
     global CPU_TEMP_ARR, BATERRY_TEMP_ARR, FAN_SPEED_ARR, TIME_ARR, BATTERY_PERCENTAGE_ARR
@@ -149,13 +163,16 @@ def graph_temp_vs_speed(plt):
     plt.set_ylabel('Tempreture (Unit: °C)')
     plt.set_ylim(ymin=0, ymax=max(max(CPU_TEMP_ARR), max(BATERRY_TEMP_ARR)) * 1.35)
 
+
+
+############### MAIN ###############
 #TODO: 横轴日期
 #TODO: 跨日期
 #TODO：图虚线实线
 #TODO: support devices with 0 or more fans
 if __name__ == '__main__':
     get_prev_log()
-    atexit.register(before_exit)
+    atexit.register(manage_exit)
     while True:
         temp_log = TemporaryFile("w+t")
         get_info(temp_log)
