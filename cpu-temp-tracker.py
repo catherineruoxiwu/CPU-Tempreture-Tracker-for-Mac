@@ -1,6 +1,5 @@
 # gem install iStats
 # 0-2 fans
-# sudo pip3 install python-daemon
 # Visulize cpu tempreture, battery tempreture, fan speed
 
 import os, re, time, subprocess, atexit, json
@@ -178,4 +177,4 @@ if __name__ == '__main__':
         get_info(temp_log)
         process_info(temp_log)
         temp_log.close()
-        time.sleep(100)
+        time.sleep(300)
